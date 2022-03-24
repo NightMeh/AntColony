@@ -7,16 +7,17 @@ class Ant:
         self.y = y
         self.speed = 2
         self.rotation = rotation
-        self.createtargetlocation()
-        print(self.targetx,self.targety)
+        self.targetx,self.targety = self.x,self.y
         
         
     def createtargetlocation(self):
-        radius = 100
-        self.targetx = radius*math.sin(self.rotation)
-        self.targetx = self.x - self.targetx
-        self.targety = radius*math.cos(self.rotation)
-        self.targety =self.y - self.targety
+        rads = math.radians(self.rotation)
+        self.targety = math.cos(rads)
+        self.targety = self.y - self.targety
+        self.targetx = math.sin(rads)
+        self.targetx +=self.x
+        print("current pos",self.x,self.y)
+        print("target",self.targetx,self.targety)
 
     def draw(self,screen):
         pygame.draw.circle(screen, [255,0,0], (self.x,self.y), 5)
@@ -30,9 +31,9 @@ class Ant:
         return stepx, stepy"""
         a = pygame.math.Vector2(self.x,self.y)
         b = pygame.math.Vector2(self.targetx,self.targety)
-        c = pygame.math.Vector2.normalize(b)
-        c = c*self.speed
-        d = a+c
+        b *= self.speed
+        d = b-a
+        print(d)
         return d
 
 

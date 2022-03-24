@@ -11,13 +11,14 @@ screen.fill([0, 0, 0])
 pygame.display.flip()
 clock = pygame.time.Clock()
 
-testant = ant.Ant(400,500,180)
+testant = ant.Ant(400,500,30)
 #baseendx = 600
 #baseendy = 200
 #variance = 400
 
 while playing:
     clock.tick(60)
+    testant.createtargetlocation()
     stepvec = testant.findMovePerFrame()
     testant.updatePosition(stepvec)
     testant.draw(screen)

@@ -9,15 +9,20 @@ playing = True
 screen = pygame.display.set_mode([SCREENWIDTH, SCREENHEIGHT])
 screen.fill([0, 0, 0])
 pygame.display.flip()
-antlist = []
-for x in range(20):
-    antlist.append(ant.Ant(random.randint(0,SCREENWIDTH),random.randint(0,SCREENHEIGHT)))
-    
-for y in range(len(antlist)):
-    antlist[y].draw(screen)
+clock = pygame.time.Clock()
+
+testant = ant.Ant(400,500,180)
+#baseendx = 600
+#baseendy = 200
+#variance = 400
 
 while playing:
+    clock.tick(60)
+    stepvec = testant.findMovePerFrame()
+    testant.updatePosition(stepvec)
+    testant.draw(screen)
     pygame.display.flip()
+    
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             playing = False

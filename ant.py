@@ -9,7 +9,6 @@ class Ant:
         self.rotation = rotation
         self.targetx,self.targety = self.x,self.y
         
-        
     def createtargetlocation(self):
         rads = math.radians(self.rotation)
         self.targety = math.cos(rads)
@@ -20,9 +19,8 @@ class Ant:
         print("target",self.targetx,self.targety)
 
     def draw(self,screen):
-        pygame.draw.circle(screen, [255,0,0], (self.x,self.y), 5)
-        pygame.display.flip() #add to end of draw all
-        pygame.draw.circle(screen, [0,0,255], (self.targetx,self.targety), 2)
+        pygame.draw.circle(screen, [255,0,0], (self.x,self.y), 2)
+        pygame.draw.circle(screen, [0,0,255], (self.targetx,self.targety), 1)
 
     def findMovePerFrame(self):
         """dx = x - self.x
@@ -31,11 +29,10 @@ class Ant:
         return stepx, stepy"""
         a = pygame.math.Vector2(self.x,self.y)
         b = pygame.math.Vector2(self.targetx,self.targety)
-        b *= self.speed
+        b = b*self.speed
         d = b-a
         print(d)
         return d
-
 
     def updatePosition(self,vec):
         self.x = vec.x

@@ -1,3 +1,4 @@
+from turtle import update
 import ant
 import pygame
 import random
@@ -17,11 +18,9 @@ antcount = 400
 ants = []
 
 for x in range(int(antcount)):
-    ants.append(ant.Ant(400,500,40))
+    ants.append(ant.Ant(250,250,40))
 
 antsplit = numpy.array_split(ants,4)
-
-count = 0
 
 def updateants(ants,screen):
     for ant in ants:
@@ -34,7 +33,7 @@ def updateants(ants,screen):
 
 
 while playing:
-    clock.tick(999)
+    clock.tick(200)
     t1 = threading.Thread(target=updateants, args=[list(antsplit[0]),screen])
     t2 = threading.Thread(target=updateants, args=[list(antsplit[1]),screen])
     t3 = threading.Thread(target=updateants, args=[list(antsplit[2]),screen])
@@ -47,11 +46,8 @@ while playing:
     t2.join()
     t3.join()
     t4.join()
+    pygame.display.update()
     pygame.display.set_caption(str(clock.get_fps()))
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             playing = False
-    count+= 1
-    if count == 1:
-        
-        count = 0

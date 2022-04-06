@@ -12,6 +12,21 @@ class Ant:
         self.velocity = pygame.math.Vector2(0,0)
         self.desireddir = pygame.math.Vector2(0,0)
 
+    def HandleFood(self):
+        #if no target food
+            #get all food with perception radius
+            #select one of the random food if foodlist > 0
+            #get dir to food (foodpos-pos).normalize
+            #start targetting food if its in view angle
+        #else 
+        #desireddir = targetfood -pos normal
+        #pickup if within close radius
+        #set food parent to ant
+        #set target food as empty
+
+        print("done")
+
+
     def UpdatePosition(self,screen,angle):
         #screen.blit(pygame.transform.rotate(self.antimage,-angle),self.position)
         screen.blit(self.antimage,self.position)

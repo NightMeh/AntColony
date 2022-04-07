@@ -5,7 +5,7 @@ class Ant:
     def __init__(self,pos):
         self.antimage = pygame.image.load(r'Assets\ant.png').convert_alpha()
         self.maxSpeed = 150
-        self.steerStrength = 10
+        self.steerStrength = 4
         self.wanderStrength = 0.2
         #self.target = target
         self.position = pygame.math.Vector2(pos)
@@ -22,7 +22,7 @@ class Ant:
     def HandleFood(self,foodList):
         if len(self.targetFoodList) == 0:
             for food in foodList:
-                if self.WithinCircle(self.position[0],self.position[1],1000,food.pos[0],food.pos[1]):
+                if self.WithinCircle(self.position[0],self.position[1],100,food.pos[0],food.pos[1]):
                     self.targetFoodList.append(food)
             
             if len(self.targetFoodList) > 0:
@@ -31,8 +31,6 @@ class Ant:
 
 
                 self.desireddir = pygame.math.Vector2.normalize(self.targetFood.pos - self.position)
-
-                angle = math.degrees(math.atan2(self.velocity.y,self.velocity.x))
                 #select one of the random food if foodlist > 0
                 #get dir to food (foodpos-pos).normalize
                 #start targetting food if its in view angle
@@ -40,11 +38,12 @@ class Ant:
             self.desireddir = pygame.math.Vector2.normalize(self.targetFood.pos - self.position)
 
             if pygame.math.Vector2.length(self.targetFood.pos - self.position) <= self.pickupRadius:
-                print(pygame.math.Vector2.length(self.targetFood.pos - self.position))
+                print("near")
                 self.targetFood.AssignParent(self)
-            foodList.remove(self.targetFood)
-            self.targetFoodList = []
-            self.targetFood = None
+                foodList.remove(self.targetFood)
+                self.targetFoodList = []
+                self.targetFood = None
+                
 
 
 
@@ -57,19 +56,18 @@ class Ant:
 
 
     def UpdatePosition(self,screen,angle):
-        screen.blit(pygame.transform.rotate(self.antimage,-angle),self.position)
+        screen.blit(pygame.transform.rotate(self.antimage,-angle),self.position-[16,16])
         #screen.blit(self.antimage,self.position)
-        print(angle)
 
     def Update(self,clock,screen,foodList):
         deltaTime = clock.tick(60)/1000
         #self.desireddir = pygame.math.Vector2.normalize(self.target - self.position) #get unit vector for desired direction
-
+        
         angleoffset = math.radians(random.randint(0,360))
         offset = pygame.math.Vector2(math.cos(angleoffset), math.sin(angleoffset))
 
         self.desireddir = pygame.math.Vector2.normalize(self.desireddir+(offset*self.wanderStrength))
-
+        self.HandleFood(foodList)
         desiredVelocity = self.desireddir * self.maxSpeed #set desired velocity to max speed
         desiredSteeringForce = (desiredVelocity - self.velocity) * self.steerStrength #set steer based on how fast it is wants to go
         acceleration = desiredSteeringForce / 1
@@ -81,10 +79,12 @@ class Ant:
             self.velocity = pygame.math.Vector2.scale_to_length(self.velocity,self.maxSpeed)
 
         self.position += self.velocity*deltaTime #update its pos
+        
         angle = math.degrees(math.atan2(self.velocity.y,self.velocity.x)) #get its angle
+        
         self.UpdatePosition(screen,angle)
 
-        self.HandleFood(foodList)
+        
         
 
 class Food:
@@ -96,7 +96,7 @@ class Food:
 
     def Update(self,screen):
         
-        if self.parent:
+        if self.parent != None:
             pygame.draw.circle(screen,[0,255,0],self.parent.position,self.radius)
         else:
             pygame.draw.circle(screen,[0,255,0],self.pos,self.radius)

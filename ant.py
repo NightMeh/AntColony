@@ -60,11 +60,11 @@ class Ant:
 
                 
     def HandlePheramoneDirection(self):
-        if self.count > 50 :
-            self.desireddir = self.right
+        #check 3 sensors,add up all sensor strengths, the highest determines direction
 
         self.count+=1
 
+    #UpdateSensorPositions
 
     def UpdatePosition(self,screen,angle):
         screen.blit(pygame.transform.rotate(self.antimage,-angle),self.position-[16,16])

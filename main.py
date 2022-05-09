@@ -8,7 +8,6 @@ playing = True
 foodList = []
 totalfood = []
 pheramoneList = []
-count = 0
 screen = pygame.display.set_mode([SCREENWIDTH, SCREENHEIGHT])
 screen.fill([0, 0, 0])
 pygame.display.flip()
@@ -16,11 +15,12 @@ pygame.display.flip()
 clock = pygame.time.Clock()
 
 ant1 = ant.Ant((600,350))
-
+ant2 = ant.Ant((500,400))
 while playing:
     clock.tick(400)
     
     ant1.Update(clock,screen,foodList,pheramoneList)
+    ant2.Update(clock,screen,foodList,pheramoneList)
     
     
     
@@ -40,18 +40,10 @@ while playing:
 
     for food in totalfood:
         food.Update(screen)
-    if count == 1:
-        test = ant1.position
-        print(ant1.position)
-        newPheramone = ant.Pheramone(test)
-        pheramoneList.append(newPheramone)
-    
+
     for pheramone in pheramoneList:
-        pheramone.Update(screen,pheramoneList)
-        print(test)
-        print("help",pheramone.position)
+        pheramone.Update(screen,pheramoneList,clock)
     
     pygame.display.flip()
     screen.fill([255, 255, 255])
-    count +=1
     

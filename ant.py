@@ -4,10 +4,10 @@ import random
 class Ant:
     def __init__(self,pos):
         self.antimage = pygame.image.load(r'Assets\ant.png').convert_alpha()
-        self.maxSpeed = 150
+        self.maxSpeed = 300
         self.steerStrength = 2
         self.wanderStrength = 0.1
-        self.position = pygame.math.Vector2(pos)
+        self.position = pos
         self.velocity = pygame.math.Vector2(0,0)
         self.desireddir = pygame.math.Vector2(0,0)
         self.targetFoodList = []
@@ -100,7 +100,7 @@ class Ant:
     
 
     def Update(self,clock,screen,foodList,pheramoneList):
-        deltaTime = clock.tick(60)/1000 #get deltatime
+        deltaTime = clock.tick(400)/1000 #get deltatime
         
         offset = self.RandomMovementOffset() #get a movementoffset for wander
         self.GetDirections()
@@ -125,6 +125,11 @@ class Ant:
         self.UpdateSensorPosition(screen)
         self.UpdatePosition(screen,angle)
         self.count += 1
+        if self.count == 400:
+            pos = [self.position[0],self.position[1]]
+            newPheramone = Pheramone(pos)
+            pheramoneList.append(newPheramone)
+            self.count = 0
 
         
         
@@ -149,12 +154,12 @@ class Pheramone:
     def __init__(self,position):
         self.position = position
         print("new position",self.position)
-        self.strength = 255
+        self.strength = 1000
 
-    def Update(self,screen,pheramoneList):
+    def Update(self,screen,pheramoneList,clock):
         pygame.draw.circle(screen,[255,0,0],self.position,3)
         self.strength -= 1
-        if self.strength == 0:
+        if self.strength < 0:
             pheramoneList.remove(self)
 
 

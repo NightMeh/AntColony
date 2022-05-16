@@ -116,12 +116,12 @@ class Ant:
         
 
         self.desireddir = pygame.math.Vector2.normalize(self.desireddir+(offset*self.wanderStrength))
-        if self.foodMode == True:
+        if self.foodMode:
             self.HandlePheramoneDirection(pheramoneList)
         else:
             self.HandlePheramoneDirection(pheramoneToHomeList)
         
-        if self.foodMode == True:
+        if self.foodMode:
             self.HandleFood(foodList)
         desiredVelocity = self.desireddir * self.maxSpeed #set desired velocity to max speed
         desiredSteeringForce = (desiredVelocity - self.velocity) * self.steerStrength #set steer based on how fast it is wants to go

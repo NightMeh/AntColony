@@ -4,8 +4,8 @@ import random
 class Ant:
     def __init__(self,pos):
         self.antimage = pygame.image.load(r'Assets\ant.png').convert_alpha()
-        self.maxSpeed = 300
-        self.steerStrength = 2
+        self.maxSpeed = 3
+        self.steerStrength = 1.5
         self.wanderStrength = 0.1
         self.position = pos
         self.velocity = pygame.math.Vector2(0,0)
@@ -13,16 +13,17 @@ class Ant:
         self.targetFoodList = []
         self.targetFood = None
         self.viewrange = 100
-        self.pickupRadius = 10
+        self.pickupRadius = 15
         self.forward = pygame.math.Vector2(0,0)
         self.left = pygame.math.Vector2(0,0)
         self.right = pygame.math.Vector2(0,0)
-        self.steerConstant = 4
+        self.steerConstant = 3
         self.count = 0
         self.sensorSize = 20
         self.sensorMiddleCentre = []
         self.sensorLeftCentre = []
         self.sensorRightCentre = []
+        self.foodMode = True #True for find food, false for find home
 
 
     def RandomMovementOffset(self):
@@ -51,10 +52,15 @@ class Ant:
             self.desireddir = pygame.math.Vector2.normalize(self.targetFood.pos - self.position)
 
             if pygame.math.Vector2.length(self.targetFood.pos - self.position) <= self.pickupRadius:
-                self.targetFood.AssignParent(self)
-                foodList.remove(self.targetFood)
-                self.targetFoodList = []
-                self.targetFood = None
+                try:
+                    self.targetFood.AssignParent(self)
+                    foodList.remove(self.targetFood)
+                    self.targetFoodList = []
+                    self.targetFood = None
+                except:
+                    print("nevermind")
+                    self.targetFood = None
+                    self.targetFoodList = []
 
     def GetDirections(self):
         self.forward = self.desireddir
@@ -100,7 +106,7 @@ class Ant:
     
 
     def Update(self,clock,screen,foodList,pheramoneList):
-        deltaTime = clock.tick(400)/1000 #get deltatime
+        deltaTime = clock.tick(400)/10 #get deltatime
         
         offset = self.RandomMovementOffset() #get a movementoffset for wander
         self.GetDirections()
@@ -113,19 +119,19 @@ class Ant:
         desiredSteeringForce = (desiredVelocity - self.velocity) * self.steerStrength #set steer based on how fast it is wants to go
         acceleration = desiredSteeringForce / 1
         if pygame.math.Vector2.length(desiredSteeringForce) > self.steerStrength: #make sure its not over the limit
-            desiredSteeringForce = pygame.math.Vector2.scale_to_length(desiredSteeringForce,self.steerStrength)
+            pygame.math.Vector2.scale_to_length(desiredSteeringForce,self.steerStrength)
         
         self.velocity = self.velocity+acceleration*deltaTime #set velocity to accel*velocity*time elapsed since last frame
-        if pygame.math.Vector2.length(self.velocity+acceleration*deltaTime) > self.maxSpeed: #make sure its not over the limit
-            self.velocity = pygame.math.Vector2.scale_to_length(self.velocity,self.maxSpeed)
-
+        if (pygame.math.Vector2.length(self.velocity)) > self.maxSpeed: #make sure its not over the limit
+            pygame.math.Vector2.scale_to_length(self.velocity,self.maxSpeed)
+        
         self.position += self.velocity*deltaTime #update its pos
         
         angle = math.degrees(math.atan2(self.velocity.y,self.velocity.x)) #get its angle
         self.UpdateSensorPosition(screen)
         self.UpdatePosition(screen,angle)
         self.count += 1
-        if self.count == 400:
+        if self.count == 75:
             pos = [self.position[0],self.position[1]]
             newPheramone = Pheramone(pos)
             pheramoneList.append(newPheramone)
@@ -142,9 +148,7 @@ class Food:
 
 
     def Update(self,screen):
-        if self.parent != None:
-            pygame.draw.circle(screen,[0,255,0],self.parent.position,self.radius)
-        else:
+        if self.parent == None:
             pygame.draw.circle(screen,[0,255,0],self.pos,self.radius)
 
     def AssignParent(self,parent):
@@ -153,8 +157,7 @@ class Food:
 class Pheramone:
     def __init__(self,position):
         self.position = position
-        print("new position",self.position)
-        self.strength = 1000
+        self.strength = 2000
 
     def Update(self,screen,pheramoneList,clock):
         pygame.draw.circle(screen,[255,0,0],self.position,3)

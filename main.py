@@ -8,19 +8,22 @@ playing = True
 foodList = []
 totalfood = []
 pheramoneList = []
+antList = []
 screen = pygame.display.set_mode([SCREENWIDTH, SCREENHEIGHT])
 screen.fill([0, 0, 0])
 pygame.display.flip()
 
 clock = pygame.time.Clock()
+for x in range(5):
+    antList.append(ant.Ant((600,350)))
 
-ant1 = ant.Ant((600,350))
-ant2 = ant.Ant((500,400))
 while playing:
     clock.tick(400)
     
-    ant1.Update(clock,screen,foodList,pheramoneList)
-    ant2.Update(clock,screen,foodList,pheramoneList)
+    for x in range(len(antList)):
+        antList[x].Update(clock,screen,foodList,pheramoneList)
+    #ant1.Update(clock,screen,foodList,pheramoneList)
+    #ant2.Update(clock,screen,foodList,pheramoneList)
     
     
     

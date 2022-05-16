@@ -6,7 +6,7 @@ class Ant:
         self.antscale = 1
         self.antimage = pygame.image.load(r'Assets\ant.png').convert_alpha()
         self.maxSpeed = 5
-        self.steerStrength = 1.5
+        self.steerStrength = 1.7
         self.wanderStrength = 0.1
         self.position = pos
         self.velocity = pygame.math.Vector2(0,0)
@@ -61,7 +61,6 @@ class Ant:
                     self.targetFoodList = []
                     self.foodMode = False
                 except:
-                    print("nevermind")
                     self.targetFood = None
                     self.targetFoodList = []
 
@@ -98,9 +97,10 @@ class Ant:
         self.sensorMiddleCentre = self.position + vel
         self.sensorLeftCentre = self.position + pygame.math.Vector2.rotate(vel,-45)
         self.sensorRightCentre = self.position + pygame.math.Vector2.rotate(vel,45)
-        pygame.draw.circle(screen,[0,255,0],self.sensorMiddleCentre,self.sensorSize)
-        pygame.draw.circle(screen,[255,255,0],self.sensorLeftCentre,self.sensorSize)
-        pygame.draw.circle(screen,[0,255,255],self.sensorRightCentre,self.sensorSize)
+        
+        #pygame.draw.circle(screen,[0,255,0],self.sensorMiddleCentre,self.sensorSize)
+        #pygame.draw.circle(screen,[255,255,0],self.sensorLeftCentre,self.sensorSize)
+        #pygame.draw.circle(screen,[0,255,255],self.sensorRightCentre,self.sensorSize)
 
 
     def UpdatePosition(self,screen,angle):
@@ -119,7 +119,6 @@ class Ant:
         if self.foodMode == True:
             self.HandlePheramoneDirection(pheramoneList)
         else:
-            print("ww")
             self.HandlePheramoneDirection(pheramoneToHomeList)
         
         if self.foodMode == True:
@@ -140,13 +139,14 @@ class Ant:
         self.UpdateSensorPosition(screen)
         self.UpdatePosition(screen,angle)
         self.count += 1
-        if self.count == 75:
+        if self.count == 15:
             pos = [self.position[0],self.position[1]]
             if self.foodMode == True:
                 newPheramone = PheramoneToHome(pos)
+                pheramoneToHomeList.append(newPheramone)
             else:
                 newPheramone = PheramoneToFood(pos)
-            pheramoneList.append(newPheramone)
+                pheramoneList.append(newPheramone)
             self.count = 0
 
         
@@ -169,7 +169,7 @@ class Food:
 class PheramoneToFood:
     def __init__(self,position):
         self.position = position
-        self.strength = 2000
+        self.strength = 750
 
     def Update(self,screen,pheramoneList):
         pygame.draw.circle(screen,[255,0,0],self.position,3)

@@ -16,7 +16,7 @@ pygame.display.flip()
 
 clock = pygame.time.Clock()
 home = ant.Home((600,500),20)
-for x in range(5):
+for x in range(10):
     antList.append(ant.Ant((600,350),home))
 
 while playing:
@@ -47,7 +47,7 @@ while playing:
         pheramone.Update(screen,pheramoneList)
 
     for pheramone in pheramoneToHomeList:
-        pheramone.Update(screen,pheramoneList)
+        pheramone.Update(screen,pheramoneToHomeList)
 
     home.Draw(screen)
     

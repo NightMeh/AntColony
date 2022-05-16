@@ -2,9 +2,10 @@ import pygame
 import math
 import random
 class Ant:
-    def __init__(self,pos):
+    def __init__(self,pos,home):
+        self.antscale = 1
         self.antimage = pygame.image.load(r'Assets\ant.png').convert_alpha()
-        self.maxSpeed = 3
+        self.maxSpeed = 5
         self.steerStrength = 1.5
         self.wanderStrength = 0.1
         self.position = pos
@@ -12,18 +13,20 @@ class Ant:
         self.desireddir = pygame.math.Vector2(0,0)
         self.targetFoodList = []
         self.targetFood = None
-        self.viewrange = 100
-        self.pickupRadius = 15
+        self.viewrange = 100 *self.antscale
+        self.pickupRadius = 15 * self.antscale
         self.forward = pygame.math.Vector2(0,0)
         self.left = pygame.math.Vector2(0,0)
         self.right = pygame.math.Vector2(0,0)
         self.steerConstant = 3
         self.count = 0
-        self.sensorSize = 20
+        self.sensorSize = 20 * self.antscale
         self.sensorMiddleCentre = []
         self.sensorLeftCentre = []
         self.sensorRightCentre = []
         self.foodMode = True #True for find food, false for find home
+        self.home = home
+
 
 
     def RandomMovementOffset(self):
@@ -56,7 +59,7 @@ class Ant:
                     self.targetFood.AssignParent(self)
                     foodList.remove(self.targetFood)
                     self.targetFoodList = []
-                    self.targetFood = None
+                    self.foodMode = False
                 except:
                     print("nevermind")
                     self.targetFood = None
@@ -105,7 +108,7 @@ class Ant:
 
     
 
-    def Update(self,clock,screen,foodList,pheramoneList):
+    def Update(self,clock,screen,foodList,pheramoneList,pheramoneToHomeList):
         deltaTime = clock.tick(400)/10 #get deltatime
         
         offset = self.RandomMovementOffset() #get a movementoffset for wander
@@ -113,8 +116,14 @@ class Ant:
         
 
         self.desireddir = pygame.math.Vector2.normalize(self.desireddir+(offset*self.wanderStrength))
-        self.HandlePheramoneDirection(pheramoneList)
-        self.HandleFood(foodList)
+        if self.foodMode == True:
+            self.HandlePheramoneDirection(pheramoneList)
+        else:
+            print("ww")
+            self.HandlePheramoneDirection(pheramoneToHomeList)
+        
+        if self.foodMode == True:
+            self.HandleFood(foodList)
         desiredVelocity = self.desireddir * self.maxSpeed #set desired velocity to max speed
         desiredSteeringForce = (desiredVelocity - self.velocity) * self.steerStrength #set steer based on how fast it is wants to go
         acceleration = desiredSteeringForce / 1
@@ -133,7 +142,10 @@ class Ant:
         self.count += 1
         if self.count == 75:
             pos = [self.position[0],self.position[1]]
-            newPheramone = Pheramone(pos)
+            if self.foodMode == True:
+                newPheramone = PheramoneToHome(pos)
+            else:
+                newPheramone = PheramoneToFood(pos)
             pheramoneList.append(newPheramone)
             self.count = 0
 
@@ -154,17 +166,35 @@ class Food:
     def AssignParent(self,parent):
         self.parent = parent
 
-class Pheramone:
+class PheramoneToFood:
     def __init__(self,position):
         self.position = position
         self.strength = 2000
 
-    def Update(self,screen,pheramoneList,clock):
+    def Update(self,screen,pheramoneList):
         pygame.draw.circle(screen,[255,0,0],self.position,3)
         self.strength -= 1
         if self.strength < 0:
             pheramoneList.remove(self)
 
+class PheramoneToHome(PheramoneToFood):
+    def __init__(self,pos):
+        super().__init__(pos)
+        
+    def Update(self,screen,pheramoneToHomeList):
+        pygame.draw.circle(screen,[0,0,255],self.position,3)
+        self.strength -= 1
+        if self.strength < 0:
+            pheramoneToHomeList.remove(self)
 
+    
+
+class Home:
+    def __init__(self,pos,radius):
+        self.position = pos
+        self.radius = radius
+
+    def Draw(self,screen):
+        pygame.draw.circle(screen,[0,0,0],self.position,self.radius)
 
     

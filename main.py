@@ -16,7 +16,7 @@ pygame.display.flip()
 
 clock = pygame.time.Clock()
 home = ant.Home((600,500),20)
-for x in range(10):
+for x in range(2):
     antList.append(ant.Ant((600,350),home))
 
 while playing:

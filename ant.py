@@ -1,6 +1,9 @@
 import pygame
 import math
 import random
+
+SCREENHEIGHT = 720
+SCREENWIDTH = 1280
 class Ant:
     def __init__(self,pos,home):
         self.antscale = 1
@@ -21,9 +24,9 @@ class Ant:
         self.steerConstant = 3
         self.count = 0
         self.sensorSize = 20 * self.antscale
-        self.sensorMiddleCentre = []
-        self.sensorLeftCentre = []
-        self.sensorRightCentre = []
+        self.sensorMiddleCentre = (0,0)
+        self.sensorLeftCentre = (0,0)
+        self.sensorRightCentre = (0,0)
         self.foodMode = True #True for find food, false for find home
         self.home = home
 
@@ -90,6 +93,14 @@ class Ant:
             elif max(leftTotal,middleTotal,rightTotal) == middleTotal:
                 self.desireddir = self.desireddir
 
+    def HandleEdgeAvoidance(self):
+        if self.sensorLeftCentre[0] > SCREENWIDTH or self.sensorLeftCentre[0] < 0 or self.sensorLeftCentre[1] > SCREENHEIGHT or self.sensorLeftCentre[1] < 0:
+            self.desireddir = self.right
+        elif self.sensorRightCentre[0] > SCREENWIDTH or self.sensorRightCentre[0] < 0 or self.sensorRightCentre[1] > SCREENHEIGHT or self.sensorRightCentre[1] < 0:
+            self.desireddir = self.left
+        
+        
+
     def UpdateSensorPosition(self,screen):
         vel = self.velocity
         if pygame.math.Vector2.length(vel) != 0:
@@ -123,6 +134,8 @@ class Ant:
         
         if self.foodMode:
             self.HandleFood(foodList)
+
+        self.HandleEdgeAvoidance()
         desiredVelocity = self.desireddir * self.maxSpeed #set desired velocity to max speed
         desiredSteeringForce = (desiredVelocity - self.velocity) * self.steerStrength #set steer based on how fast it is wants to go
         acceleration = desiredSteeringForce / 1
@@ -165,6 +178,12 @@ class Food:
 
     def AssignParent(self,parent):
         self.parent = parent
+
+
+class Trail:
+    def __init__(self,state=False):
+        self.pheramones = []
+        self.active = state
 
 class PheramoneToFood:
     def __init__(self,position):

@@ -29,6 +29,7 @@ class Ant:
         self.sensorRightCentre = (0,0)
         self.foodMode = True #True for find food, false for find home
         self.home = home
+        self.trail = Trail()
 
 
 
@@ -43,7 +44,7 @@ class Ant:
         square_dist = (center_x - x) ** 2 + (center_y - y) ** 2
         return square_dist <= radius ** 2
 
-    def HandleFood(self,foodList):
+    def HandleFood(self,foodList,pheramoneList):
         if len(self.targetFoodList) == 0:
             for food in foodList:
                 if self.WithinCircle(self.position[0],self.position[1],self.viewrange,food.pos[0],food.pos[1]):
@@ -62,7 +63,9 @@ class Ant:
                     self.targetFood.AssignParent(self)
                     foodList.remove(self.targetFood)
                     self.targetFoodList = []
+                    self.trail.ActivateAll(pheramoneList)
                     self.foodMode = False
+                    self.trail = Trail()
                 except:
                     self.targetFood = None
                     self.targetFoodList = []
@@ -77,13 +80,13 @@ class Ant:
         leftTotal = 0
         middleTotal = 0
         rightTotal = 0
-        for x in range(len(pheramoneList)):
-            if self.WithinCircle(self.sensorLeftCentre[0],self.sensorLeftCentre[1],self.sensorSize,pheramoneList[x].position[0],pheramoneList[x].position[1]):
-                leftTotal += pheramoneList[x].strength
-            if self.WithinCircle(self.sensorMiddleCentre[0],self.sensorMiddleCentre[1],self.sensorSize,pheramoneList[x].position[0],pheramoneList[x].position[1]):
-                middleTotal += pheramoneList[x].strength
-            if self.WithinCircle(self.sensorRightCentre[0],self.sensorRightCentre[1],self.sensorSize,pheramoneList[x].position[0],pheramoneList[x].position[1]):
-                rightTotal += pheramoneList[x].strength
+        for pheramone in pheramoneList:
+            if self.WithinCircle(self.sensorLeftCentre[0],self.sensorLeftCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
+                leftTotal += pheramone.strength
+            if self.WithinCircle(self.sensorMiddleCentre[0],self.sensorMiddleCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
+                middleTotal += pheramone.strength
+            if self.WithinCircle(self.sensorRightCentre[0],self.sensorRightCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
+                rightTotal += pheramone.strength
         
         if leftTotal+rightTotal+middleTotal != 0:
             if max(leftTotal,middleTotal,rightTotal) == leftTotal:
@@ -119,9 +122,7 @@ class Ant:
 
     
 
-    def Update(self,clock,screen,foodList,pheramoneList,pheramoneToHomeList):
-        deltaTime = clock.tick(400)/10 #get deltatime
-        
+    def Update(self,clock,screen,foodList,pheramoneList,pheramoneToHomeList,deltaTime):
         offset = self.RandomMovementOffset() #get a movementoffset for wander
         self.GetDirections()
         
@@ -133,7 +134,7 @@ class Ant:
             self.HandlePheramoneDirection(pheramoneToHomeList)
         
         if self.foodMode:
-            self.HandleFood(foodList)
+            self.HandleFood(foodList,pheramoneToHomeList)
 
         self.HandleEdgeAvoidance()
         desiredVelocity = self.desireddir * self.maxSpeed #set desired velocity to max speed
@@ -142,7 +143,7 @@ class Ant:
         if pygame.math.Vector2.length(desiredSteeringForce) > self.steerStrength: #make sure its not over the limit
             pygame.math.Vector2.scale_to_length(desiredSteeringForce,self.steerStrength)
         
-        self.velocity = self.velocity+acceleration*deltaTime #set velocity to accel*velocity*time elapsed since last frame
+        self.velocity = self.velocity+acceleration*deltaTime #set velocity to accel+velocity*time elapsed since last frame
         if (pygame.math.Vector2.length(self.velocity)) > self.maxSpeed: #make sure its not over the limit
             pygame.math.Vector2.scale_to_length(self.velocity,self.maxSpeed)
         
@@ -156,10 +157,12 @@ class Ant:
             pos = [self.position[0],self.position[1]]
             if self.foodMode == True:
                 newPheramone = PheramoneToHome(pos)
-                pheramoneToHomeList.append(newPheramone)
+                self.trail.pheramones.append(newPheramone)
+                #pheramoneToHomeList.append(newPheramone)
             else:
                 newPheramone = PheramoneToFood(pos)
-                pheramoneList.append(newPheramone)
+                self.trail.pheramones.append(newPheramone)
+                #pheramoneList.append(newPheramone)
             self.count = 0
 
         
@@ -185,10 +188,18 @@ class Trail:
         self.pheramones = []
         self.active = state
 
+    def ActivateAll(self,pheramoneList):
+        self.pheramones.reverse()
+        for index,pheramone in enumerate(self.pheramones):
+            pheramone.active = True
+            pheramone.strength -= index
+            pheramoneList.append(pheramone)
+
 class PheramoneToFood:
     def __init__(self,position):
         self.position = position
         self.strength = 750
+        self.active = False
 
     def Update(self,screen,pheramoneList):
         pygame.draw.circle(screen,[255,0,0],self.position,3)

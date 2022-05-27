@@ -10,11 +10,17 @@ def testfunc():
     playing = True
     foodList = []
     totalfood = []
-    pheramoneList = []
-    pheramoneToHomeList = []
+    trailList = []
     antList = []
     screen = pygame.display.set_mode([SCREENWIDTH, SCREENHEIGHT])
     screen.fill([0, 0, 0])
+    testtrail = ant.Trail(True)
+    trailList.append(testtrail)
+    chunks = {}
+
+    for chunky in range(0,9):
+        for chunkx in range(0,16):
+            chunks[(chunkx,chunky)] = []
 
     clock = pygame.time.Clock()
     home = ant.Home((600,500),20)
@@ -24,9 +30,10 @@ def testfunc():
 
     while playing:
         clock.tick(400)
+        pygame.display.set_caption("{:.2f}".format(clock.get_fps()))
         deltaTime = clock.tick(400)/10
         for x in range(len(antList)):
-            antList[x].Update(clock,screen,foodList,pheramoneList,pheramoneToHomeList,deltaTime)
+            antList[x].Update(clock,screen,foodList,deltaTime,chunks,trailList)
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -36,21 +43,28 @@ def testfunc():
                 foodList.append(newfood)
                 totalfood.append(newfood)
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_w:
-                    newPheramone = ant.PheramoneToFood(pygame.mouse.get_pos())
-                    pheramoneList.append(newPheramone)
-                if event.key == pygame.K_s:
-                    newPheramone = ant.PheramoneToHome(pygame.mouse.get_pos())
-                    pheramoneToHomeList.append(newPheramone)
+                match event.key:
+                    case pygame.K_w:
+                        chunkx = (pygame.mouse.get_pos()[0] // 80)
+                        chunky = (pygame.mouse.get_pos()[1] // 80)
+                        newPheramone = ant.PheramoneToHome(pygame.mouse.get_pos(),(chunkx,chunky),testtrail)
+                        testtrail.pheramones.append(newPheramone)
+                        chunks[(chunkx,chunky)].append(newPheramone)
+                    case pygame.K_s:
+                        chunkx = (pygame.mouse.get_pos()[0] // 80)
+                        chunky = (pygame.mouse.get_pos()[1] // 80)
+                        newPheramone = ant.PheramoneToFood(pygame.mouse.get_pos(),(chunkx,chunky),testtrail)
+                        testtrail.pheramones.append(newPheramone)
+                        chunks[(chunkx,chunky)].append(newPheramone)
 
         for food in totalfood:
             food.Update(screen)
 
-        for pheramone in pheramoneList:
-            pheramone.Update(screen,pheramoneList)
+        for trail in trailList:
+            trail.Update()
+            for pheramone in trail.pheramones:
+                pheramone.Update(screen,chunks)
 
-        for pheramone in pheramoneToHomeList:
-            pheramone.Update(screen,pheramoneToHomeList)
 
         home.Draw(screen)
         

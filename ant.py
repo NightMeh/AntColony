@@ -1,3 +1,4 @@
+import chunk
 import pygame
 import math
 import random
@@ -31,8 +32,22 @@ class Ant:
         self.home = home
         self.trail = Trail()
 
+    @property
+    def currentChunk(self):
+        chunkx = (self.position[0] // 80)
+        chunky = (self.position[1] // 80)
+        chunkx = max(0,min(chunkx,15))
+        chunky = max(0,min(chunky,8))
+        return (int(chunkx),int(chunky))
 
-
+    def ChunksToCheck(self):
+        returnlist = []
+        for x in range(-1,2):
+            for y in range(-1,2):
+                chunkchecking = (self.currentChunk[0]+x,self.currentChunk[1]+y)
+                if  0 <= chunkchecking[0] <= 15 and 0 <= chunkchecking[1] <= 8: 
+                    returnlist.append(chunkchecking)
+        return returnlist
     def RandomMovementOffset(self):
         t = random.random()
         u = random.random()
@@ -44,7 +59,8 @@ class Ant:
         square_dist = (center_x - x) ** 2 + (center_y - y) ** 2
         return square_dist <= radius ** 2
 
-    def HandleFood(self,foodList,pheramoneList):
+    def HandleFood(self,foodList,trailList,chunks):
+        
         if len(self.targetFoodList) == 0:
             for food in foodList:
                 if self.WithinCircle(self.position[0],self.position[1],self.viewrange,food.pos[0],food.pos[1]):
@@ -57,13 +73,13 @@ class Ant:
                 self.desireddir = pygame.math.Vector2.normalize(self.targetFood.pos - self.position)
         else:
             self.desireddir = pygame.math.Vector2.normalize(self.targetFood.pos - self.position)
-
             if pygame.math.Vector2.length(self.targetFood.pos - self.position) <= self.pickupRadius:
                 try:
                     self.targetFood.AssignParent(self)
                     foodList.remove(self.targetFood)
                     self.targetFoodList = []
-                    self.trail.ActivateAll(pheramoneList)
+                    self.trail.ActivateAll(chunks)
+                    trailList.append(self.trail)
                     self.foodMode = False
                     self.trail = Trail()
                 except:
@@ -76,17 +92,27 @@ class Ant:
         self.right = pygame.math.Vector2.rotate(self.desireddir,self.steerConstant)
 
                 
-    def HandlePheramoneDirection(self,pheramoneList):
+    def HandlePheramoneDirection(self,chunks):
         leftTotal = 0
         middleTotal = 0
         rightTotal = 0
-        for pheramone in pheramoneList:
-            if self.WithinCircle(self.sensorLeftCentre[0],self.sensorLeftCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
-                leftTotal += pheramone.strength
-            if self.WithinCircle(self.sensorMiddleCentre[0],self.sensorMiddleCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
-                middleTotal += pheramone.strength
-            if self.WithinCircle(self.sensorRightCentre[0],self.sensorRightCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
-                rightTotal += pheramone.strength
+        chunksToCheck = self.ChunksToCheck()
+        for chunk in chunksToCheck:
+            for pheramone in chunks[chunk]:
+                if self.foodMode and str(type(pheramone))=="<class 'ant.PheramoneToFood'>":
+                    if self.WithinCircle(self.sensorLeftCentre[0],self.sensorLeftCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
+                        leftTotal += pheramone.strength
+                    if self.WithinCircle(self.sensorMiddleCentre[0],self.sensorMiddleCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
+                        middleTotal += pheramone.strength
+                    if self.WithinCircle(self.sensorRightCentre[0],self.sensorRightCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
+                        rightTotal += pheramone.strength
+                elif not self.foodMode and str(type(pheramone))=="<class 'ant.PheramoneToHome'>":
+                    if self.WithinCircle(self.sensorLeftCentre[0],self.sensorLeftCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
+                        leftTotal += pheramone.strength
+                    if self.WithinCircle(self.sensorMiddleCentre[0],self.sensorMiddleCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
+                        middleTotal += pheramone.strength
+                    if self.WithinCircle(self.sensorRightCentre[0],self.sensorRightCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
+                        rightTotal += pheramone.strength
         
         if leftTotal+rightTotal+middleTotal != 0:
             if max(leftTotal,middleTotal,rightTotal) == leftTotal:
@@ -122,19 +148,17 @@ class Ant:
 
     
 
-    def Update(self,clock,screen,foodList,pheramoneList,pheramoneToHomeList,deltaTime):
+    def Update(self,clock,screen,foodList,deltaTime,chunks,trailList):
         offset = self.RandomMovementOffset() #get a movementoffset for wander
         self.GetDirections()
         
 
         self.desireddir = pygame.math.Vector2.normalize(self.desireddir+(offset*self.wanderStrength))
-        if self.foodMode:
-            self.HandlePheramoneDirection(pheramoneList)
-        else:
-            self.HandlePheramoneDirection(pheramoneToHomeList)
+  
+        self.HandlePheramoneDirection(chunks)
         
         if self.foodMode:
-            self.HandleFood(foodList,pheramoneToHomeList)
+            self.HandleFood(foodList,trailList,chunks)
 
         self.HandleEdgeAvoidance()
         desiredVelocity = self.desireddir * self.maxSpeed #set desired velocity to max speed
@@ -155,14 +179,12 @@ class Ant:
         self.count += 1
         if self.count == 15:
             pos = [self.position[0],self.position[1]]
-            if self.foodMode == True:
-                newPheramone = PheramoneToHome(pos)
+            if self.foodMode:
+                newPheramone = PheramoneToHome(pos,self.currentChunk,self.trail)
                 self.trail.pheramones.append(newPheramone)
-                #pheramoneToHomeList.append(newPheramone)
             else:
-                newPheramone = PheramoneToFood(pos)
+                newPheramone = PheramoneToFood(pos,self.currentChunk,self.trail)
                 self.trail.pheramones.append(newPheramone)
-                #pheramoneList.append(newPheramone)
             self.count = 0
 
         
@@ -188,34 +210,58 @@ class Trail:
         self.pheramones = []
         self.active = state
 
-    def ActivateAll(self,pheramoneList):
+    def ActivateAll(self,chunks):
         self.pheramones.reverse()
         for index,pheramone in enumerate(self.pheramones):
             pheramone.active = True
             pheramone.strength -= index
-            pheramoneList.append(pheramone)
+            chunks[pheramone.currentChunk].append(pheramone)
+        
+
+    def Update(self):
+        for pheramone in self.pheramones:
+            if pheramone.strength < 0:
+                self.pheramones.remove(pheramone)
 
 class PheramoneToFood:
-    def __init__(self,position):
+    def __init__(self,position,chunk,trail):
         self.position = position
         self.strength = 750
         self.active = False
+        self.currentChunk = chunk
+        self.trail = trail
 
-    def Update(self,screen,pheramoneList):
+    def __type__(self):
+        return "toFood"
+    
+    def __repr__(self):
+        return f"{self.currentChunk}"
+
+
+    def Update(self,screen,chunks):
         pygame.draw.circle(screen,[255,0,0],self.position,3)
         self.strength -= 1
         if self.strength < 0:
-            pheramoneList.remove(self)
+            chunks[self.currentChunk].remove(self)
 
 class PheramoneToHome(PheramoneToFood):
-    def __init__(self,pos):
-        super().__init__(pos)
+    def __init__(self,pos,chunk,trail):
+        super().__init__(pos,chunk,trail)
         
-    def Update(self,screen,pheramoneToHomeList):
+    def __type__(self):
+        return "toHome"
+
+    def Update(self,screen,chunks):
         pygame.draw.circle(screen,[0,0,255],self.position,3)
         self.strength -= 1
+
         if self.strength < 0:
-            pheramoneToHomeList.remove(self)
+            chunks[self.currentChunk].remove(self)
+            self.trail.pheramones.remove(self)
+            
+
+
+
 
     
 

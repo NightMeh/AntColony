@@ -1,15 +1,14 @@
-import chunk
 import pygame
 import math
 import random
+from withinCircle import withinCircle
+from constants import *
 
-SCREENHEIGHT = 720
-SCREENWIDTH = 1280
 class Ant:
     def __init__(self,pos,home):
         self.antscale = 1
         self.antimage = pygame.image.load(r'Assets\ant.png').convert_alpha()
-        self.maxSpeed = 5
+        self.maxSpeed = 15
         self.steerStrength = 1.7
         self.wanderStrength = 0.1
         self.position = pos
@@ -31,9 +30,9 @@ class Ant:
         self.foodMode = True #True for find food, false for find home
         self.home = home
         self.trail = Trail()
+        self.current_chunk = (-1,-1)
 
-    @property
-    def currentChunk(self):
+    def CurrentChunk(self):
         chunkx = (self.position[0] // 80)
         chunky = (self.position[1] // 80)
         chunkx = max(0,min(chunkx,15))
@@ -44,7 +43,7 @@ class Ant:
         returnlist = []
         for x in range(-1,2):
             for y in range(-1,2):
-                chunkchecking = (self.currentChunk[0]+x,self.currentChunk[1]+y)
+                chunkchecking = (self.current_chunk[0]+x,self.current_chunk[1]+y)
                 if  0 <= chunkchecking[0] <= 15 and 0 <= chunkchecking[1] <= 8: 
                     returnlist.append(chunkchecking)
         return returnlist
@@ -55,15 +54,11 @@ class Ant:
         y = 1 * math.sqrt(t) * math.sin(2 * math.pi * u)
         return pygame.math.Vector2(x,y)
 
-    def WithinCircle(self,center_x,center_y,radius,x,y):
-        square_dist = (center_x - x) ** 2 + (center_y - y) ** 2
-        return square_dist <= radius ** 2
-
     def HandleFood(self,foodList,trailList,chunks):
         
         if len(self.targetFoodList) == 0:
             for food in foodList:
-                if self.WithinCircle(self.position[0],self.position[1],self.viewrange,food.pos[0],food.pos[1]):
+                if withinCircle(self.position[0],self.position[1],self.viewrange,food.pos[0],food.pos[1]):
                     self.targetFoodList.append(food)
             
             if len(self.targetFoodList) > 0:
@@ -100,18 +95,18 @@ class Ant:
         for chunk in chunksToCheck:
             for pheramone in chunks[chunk]:
                 if self.foodMode and str(type(pheramone))=="<class 'ant.PheramoneToFood'>":
-                    if self.WithinCircle(self.sensorLeftCentre[0],self.sensorLeftCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
+                    if withinCircle(self.sensorLeftCentre[0],self.sensorLeftCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
                         leftTotal += pheramone.strength
-                    if self.WithinCircle(self.sensorMiddleCentre[0],self.sensorMiddleCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
+                    if withinCircle(self.sensorMiddleCentre[0],self.sensorMiddleCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
                         middleTotal += pheramone.strength
-                    if self.WithinCircle(self.sensorRightCentre[0],self.sensorRightCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
+                    if withinCircle(self.sensorRightCentre[0],self.sensorRightCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
                         rightTotal += pheramone.strength
                 elif not self.foodMode and str(type(pheramone))=="<class 'ant.PheramoneToHome'>":
-                    if self.WithinCircle(self.sensorLeftCentre[0],self.sensorLeftCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
+                    if withinCircle(self.sensorLeftCentre[0],self.sensorLeftCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
                         leftTotal += pheramone.strength
-                    if self.WithinCircle(self.sensorMiddleCentre[0],self.sensorMiddleCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
+                    if withinCircle(self.sensorMiddleCentre[0],self.sensorMiddleCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
                         middleTotal += pheramone.strength
-                    if self.WithinCircle(self.sensorRightCentre[0],self.sensorRightCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
+                    if withinCircle(self.sensorRightCentre[0],self.sensorRightCentre[1],self.sensorSize,pheramone.position[0],pheramone.position[1]):
                         rightTotal += pheramone.strength
         
         if leftTotal+rightTotal+middleTotal != 0:
@@ -176,14 +171,15 @@ class Ant:
         angle = math.degrees(math.atan2(self.velocity.y,self.velocity.x)) #get its angle
         self.UpdateSensorPosition(screen)
         self.UpdatePosition(screen,angle)
+        self.current_chunk = self.CurrentChunk()
         self.count += 1
         if self.count == 15:
             pos = [self.position[0],self.position[1]]
             if self.foodMode:
-                newPheramone = PheramoneToHome(pos,self.currentChunk,self.trail)
+                newPheramone = PheramoneToHome(pos,self.current_chunk,self.trail)
                 self.trail.pheramones.append(newPheramone)
             else:
-                newPheramone = PheramoneToFood(pos,self.currentChunk,self.trail)
+                newPheramone = PheramoneToFood(pos,self.current_chunk,self.trail)
                 self.trail.pheramones.append(newPheramone)
             self.count = 0
 

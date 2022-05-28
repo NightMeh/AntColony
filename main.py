@@ -2,9 +2,11 @@ import ant
 import pygame
 import cProfile
 import pstats
+from constants import *
+from engine import Engine
 
-SCREENHEIGHT = 720
-SCREENWIDTH = 1280
+
+engine = Engine()
 
 def testfunc():
     playing = True
@@ -29,11 +31,12 @@ def testfunc():
 
 
     while playing:
-        clock.tick(400)
-        pygame.display.set_caption("{:.2f}".format(clock.get_fps()))
-        deltaTime = clock.tick(400)/10
+        engine.update_dt()
+        pygame.display.set_caption("{:.2f}".format(engine.clock.get_fps()))
+        
+        #deltaTime = clock.tick(400)/10
         for x in range(len(antList)):
-            antList[x].Update(clock,screen,foodList,deltaTime,chunks,trailList)
+            antList[x].Update(clock,screen,foodList,engine.dt,chunks,trailList)
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

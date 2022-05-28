@@ -2,6 +2,7 @@ import ant
 import pygame
 import cProfile
 import pstats
+import numpy as np
 from constants import *
 from engine import Engine
 
@@ -20,8 +21,9 @@ def testfunc():
     trailList.append(testtrail)
     chunks = {}
 
-    for chunky in range(0,9):
-        for chunkx in range(0,16):
+    for chunky in range(SCREENHEIGHT/CHUNKSIZE):
+        for chunkx in range(SCREENWIDTH/CHUNKSIZE):
+            np.zeros(((CHUNKSIZE/CELLSIZE)**2,), dtype=int)
             chunks[(chunkx,chunky)] = []
 
     clock = pygame.time.Clock()

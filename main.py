@@ -33,7 +33,7 @@ def testfunc():
     while playing:
         engine.update_dt()
         pygame.display.set_caption("{:.2f}".format(engine.clock.get_fps()))
-        
+
         #deltaTime = clock.tick(400)/10
         for x in range(len(antList)):
             antList[x].Update(clock,screen,foodList,engine.dt,chunks,trailList)
@@ -83,4 +83,4 @@ stats = pstats.Stats(pr)
 stats.sort_stats(pstats.SortKey.TIME)
 #stats.print_stats()
 
-stats.dump_stats(filename="test.prof")
+stats.dump_stats(filename="28-5-22.prof")

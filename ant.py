@@ -30,7 +30,8 @@ class Ant:
         self.foodMode = True #True for find food, false for find home
         self.home = home
         self.trail = Trail()
-        self.current_chunk = (-1,-1)
+        self.current_chunk = (0,0)
+        self.angle = 0
 
     def CurrentChunk(self):
         chunkx = (self.position[0] // 80)
@@ -41,11 +42,41 @@ class Ant:
 
     def ChunksToCheck(self):
         returnlist = []
-        for x in range(-1,2):
-            for y in range(-1,2):
+        x1,y1 = -1,-1
+        x2,y2 = 2,2
+        itself = False
+        if  -22.5 < self.angle < 22.5:
+            x1,x2 = 1,2
+            itself = True
+        elif 22.5 < self.angle < 67.5:
+            x1,x2 = 0,2
+            y1,y2 = 0,2
+        elif -67.5 < self.angle < -22.5:
+            x1,x2=0,2
+            y1,y2=-1,1
+        elif 67.5 < self.angle < 112.5:
+            y1,y2 = 1,2
+            itself = True
+        elif  -112.5 < self.angle < -67.5:
+            y1,y2 = -1,0
+            itself = True
+        elif 112.5 < self.angle < 157.5:
+            x1,x2 = -1,1
+            y1,y2 = 0,2
+        elif -157.5 < self.angle < -112.5:
+            x1,x2=-1,1
+            y1,y2=-1,1
+        elif   self.angle > 157.5 or self.angle < -157.5:
+            x1,x2 = -1,0
+            itself = True
+
+        for x in range(x1,x2):
+            for y in range(y1,y2):
                 chunkchecking = (self.current_chunk[0]+x,self.current_chunk[1]+y)
                 if  0 <= chunkchecking[0] <= 15 and 0 <= chunkchecking[1] <= 8: 
                     returnlist.append(chunkchecking)
+        if itself:
+            returnlist.append(self.current_chunk)
         return returnlist
     def RandomMovementOffset(self):
         t = random.random()
@@ -138,8 +169,8 @@ class Ant:
         #pygame.draw.circle(screen,[0,255,255],self.sensorRightCentre,self.sensorSize)
 
 
-    def UpdatePosition(self,screen,angle):
-        screen.blit(pygame.transform.rotate(self.antimage,-angle),self.position-[16,16])
+    def UpdatePosition(self,screen):
+        screen.blit(pygame.transform.rotate(self.antimage,self.angle),self.position-[16,16])
 
     
 
@@ -168,9 +199,9 @@ class Ant:
         
         self.position += self.velocity*deltaTime #update its pos
         
-        angle = math.degrees(math.atan2(self.velocity.y,self.velocity.x)) #get its angle
+        self.angle = -(math.degrees(math.atan2(self.velocity.y,self.velocity.x))) #get its self.angle
         self.UpdateSensorPosition(screen)
-        self.UpdatePosition(screen,angle)
+        self.UpdatePosition(screen)
         self.current_chunk = self.CurrentChunk()
         self.count += 1
         if self.count == 15:

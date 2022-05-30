@@ -16,6 +16,7 @@ def testfunc():
     screen = pygame.display.set_mode([SCREENWIDTH, SCREENHEIGHT])
     screen.fill([0, 0, 0])
     chunks = {}
+    world = {}
 
     for chunky in range(SCREENHEIGHT//CHUNKSIZE):
         for chunkx in range(SCREENWIDTH//CHUNKSIZE):
@@ -24,10 +25,11 @@ def testfunc():
                 for celly in range(CHUNKSIZE//CELLSIZE):
                     markers.append(ant.Marker())
             chunks[(chunkx,chunky)] = np.array(markers,dtype=object)
+            world[(chunkx,chunky)] = np.array(markers,dtype=object)
 
     clock = pygame.time.Clock()
     home = ant.Home((600,500),20)
-    for x in range(50):
+    for x in range(1):
         antList.append(ant.Ant((600,350),home))
 
 
@@ -61,14 +63,17 @@ def testfunc():
         @lru_cache(maxsize=10)
         def drawStates(screen):
             for chunk in chunks:
-                for index,marker in enumerate(chunks[chunk]):
-                    markerx,markery = markerMaths(chunk,index)
-                    if marker.state == ant.MarkerState.TOHOME:
-                        pygame.draw.rect(screen,[0,0,255],pygame.Rect((markerx,markery),(CELLSIZE,CELLSIZE)))
-                    if marker.state == ant.MarkerState.TOFOOD:
-                        pygame.draw.rect(screen,[0,255,0],pygame.Rect((markerx,markery),(CELLSIZE,CELLSIZE)))
+                for marker in chunks[chunk]:
+                    for markery in range(0,CHUNKSIZE,CELLSIZE):
+                        for markerx in range(0,CHUNKSIZE,CELLSIZE):
+                            mx = markerx * chunk[0] * CHUNKSIZE
+                            my = markery * chunk[1] * CHUNKSIZE
+                            if marker.state == ant.MarkerState.TOHOME:
+                                pygame.draw.rect(screen,[0,0,255],pygame.Rect((mx,my),(CELLSIZE,CELLSIZE)))
+                            if marker.state == ant.MarkerState.TOFOOD:
+                                pygame.draw.rect(screen,[0,255,0],pygame.Rect((mx,my),(CELLSIZE,CELLSIZE)))
 
-        #drawStates(screen)
+        drawStates(screen)
 
         pygame.display.flip()
         screen.fill([255, 255, 255])

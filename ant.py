@@ -1,4 +1,5 @@
 from logging.config import valid_ident
+from turtle import position
 import pygame
 import math
 import random
@@ -24,12 +25,7 @@ class Ant:
         self.forward = pygame.math.Vector2(0, 0)
         self.left = pygame.math.Vector2(0, 0)
         self.right = pygame.math.Vector2(0, 0)
-        self.steerConstant = 3
         self.count = 0
-        self.sensorSize = 20 * self.antscale
-        self.sensorMiddleCentre = (0, 0)
-        self.sensorLeftCentre = (0, 0)
-        self.sensorRightCentre = (0, 0)
         self.foodMode = True  # True for find food, false for find home
         self.home = home
         self.current_chunk = (0, 0)
@@ -40,52 +36,27 @@ class Ant:
     def CurrentChunk(self):
         chunkx = (self.position[0] // CHUNKSIZE)
         chunky = (self.position[1] // CHUNKSIZE)
-        chunkx = max(0, min(chunkx, (SCREENWIDTH/CHUNKSIZE)-1))
-        chunky = max(0, min(chunky, (SCREENHEIGHT/CHUNKSIZE)-1))
+        chunkx = max(0, min(chunkx, (SCREENWIDTH//CHUNKSIZE)-1))
+        chunky = max(0, min(chunky, (SCREENHEIGHT//CHUNKSIZE)-1))
 
-        cellx = (self.position[0] - chunkx*CHUNKSIZE)/CELLSIZE
-        celly = (self.position[1] - chunky*CHUNKSIZE)/CELLSIZE
+        cellx = (self.position[0] - chunkx*CHUNKSIZE)//CELLSIZE
+        celly = (self.position[1] - chunky*CHUNKSIZE)//CELLSIZE
         self.current_chunk = (int(chunkx), int(chunky))
         self.current_cell = (int(cellx), int(celly))
+    
+    def HasItemWithPosition(self,mainList,componant):
+        for item in mainList:
+            if item.position == componant.position:
+                return True
+        return False
 
     def ChunksToCheck(self):
         returnlist = []
-        x1, y1 = -1, -1
-        x2, y2 = 2, 2
-        itself = False
-        if -22.5 < self.angle < 22.5:
-            x1, x2 = 1, 2
-            itself = True
-        elif 22.5 < self.angle < 67.5:
-            x1, x2 = 0, 2
-            y1, y2 = 0, 2
-        elif -67.5 < self.angle < -22.5:
-            x1, x2 = 0, 2
-            y1, y2 = -1, 1
-        elif 67.5 < self.angle < 112.5:
-            y1, y2 = 1, 2
-            itself = True
-        elif -112.5 < self.angle < -67.5:
-            y1, y2 = -1, 0
-            itself = True
-        elif 112.5 < self.angle < 157.5:
-            x1, x2 = -1, 1
-            y1, y2 = 0, 2
-        elif -157.5 < self.angle < -112.5:
-            x1, x2 = -1, 1
-            y1, y2 = -1, 1
-        elif self.angle > 157.5 or self.angle < -157.5:
-            x1, x2 = -1, 0
-            itself = True
-
-        for x in range(x1, x2):
-            for y in range(y1, y2):
-                chunkchecking = (
-                    self.current_chunk[0]+x, self.current_chunk[1]+y)
-                if 0 <= chunkchecking[0] <= 15 and 0 <= chunkchecking[1] <= 8:
+        for x in range(-1, 2):
+            for y in range(-1, 2):
+                chunkchecking = (self.current_chunk[0]+x, self.current_chunk[1]+y)
+                if 0 <= chunkchecking[0] <= (SCREENWIDTH//CHUNKSIZE)-1 and 0 <= chunkchecking[1] <= (SCREENHEIGHT//CHUNKSIZE)-1:
                     returnlist.append(chunkchecking)
-        if itself:
-            returnlist.append(self.current_chunk)
         return returnlist
 
     def RandomMovementOffset(self):
@@ -124,14 +95,13 @@ class Ant:
 
     def HandlePheramoneDirection(self, chunks):
         chunksToCheck = self.ChunksToCheck()
+        savelist = []
         for chunk in chunksToCheck:
             total_intensity = 0
-            for index,marker in enumerate(chunks[chunk]):
+            for marker in chunks[chunk]:
                 if marker.state != MarkerState.NULL:
                     if self.foodMode and marker.state == MarkerState.TOFOOD:
-                        markerx = (CHUNKSIZE*chunk[0])+(index%(CHUNKSIZE/CELLSIZE))*CELLSIZE
-                        markery = CHUNKSIZE*chunk[1]+(index // (CHUNKSIZE/CELLSIZE))*CELLSIZE
-                        markerpos = pygame.math.Vector2(markerx,markery)
+                        markerpos = pygame.math.Vector2(marker.position[0],marker.position[1])
                         tomarker = pygame.math.Vector2(markerpos - self.position)
                         length = pygame.math.Vector2.length(tomarker)
                         m_vecx = self.cos(self.angle)
@@ -142,11 +112,11 @@ class Ant:
                             if pygame.math.Vector2.dot(tomarker,m_vec)>0:
                                 total_intensity += marker.intensity
                                 point += marker.intensity * markerpos
+                        tempsave = (total_intensity,point)
+                        savelist.append(tempsave)
 
                     elif not self.foodMode and marker.state == MarkerState.TOHOME:
-                        markerx = (CHUNKSIZE*chunk[0])+(index%(CHUNKSIZE/CELLSIZE))*CELLSIZE
-                        markery = CHUNKSIZE*chunk[1]+(index // (CHUNKSIZE/CELLSIZE))*CELLSIZE
-                        markerpos = pygame.math.Vector2(markerx,markery)
+                        markerpos = pygame.math.Vector2(marker.position[0],marker.position[1])
                         tomarker = pygame.math.Vector2(markerpos - self.position)
                         length = pygame.math.Vector2.length(tomarker)
                         m_vecx = self.cos(self.angle)
@@ -158,12 +128,24 @@ class Ant:
                                 total_intensity += marker.intensity
                                 point += marker.intensity * markerpos
 
-                    if total_intensity:
-                            tempvec = pygame.math.Vector2(point / total_intensity - self.position)
-                            if tempvec.x > 0:
-                                self.desireddir = math.acos(tempvec.x/pygame.math.Vector2.length(tempvec))
-                            else:
-                                self.desireddir = -(math.acos(tempvec.x/pygame.math.Vector2.length(tempvec)))
+                        tempsave = (total_intensity,point)
+                        savelist.append(tempsave)
+        if len(savelist) != 0:
+            total_intensitypos = 0
+
+            for x in range(len(savelist)):
+                if savelist[x][0] > savelist[total_intensitypos][0]:
+                    total_intensitypos = x
+                    print(total_intensitypos)
+            total_intensity = savelist[total_intensitypos][0]
+            point = savelist[total_intensitypos][1]
+
+        if total_intensity:
+                tempvec = pygame.math.Vector2(point / total_intensity - self.position)
+                if tempvec.x > 0:
+                    self.desireddir = math.acos(tempvec.x/pygame.math.Vector2.length(tempvec))
+                else:
+                    self.desireddir = -(math.acos(tempvec.x/pygame.math.Vector2.length(tempvec)))
 
 
     def HandleEdgeAvoidance(self):
@@ -173,23 +155,29 @@ class Ant:
     def UpdatePosition(self, screen):
         screen.blit(pygame.transform.rotate(self.antimage, self.angle), self.position-[16, 16])
 
-    def PlaceMarker(self,chunks):
-        index = ((self.position[0] % CHUNKSIZE) // CELLSIZE) + (((self.position[1] % CHUNKSIZE) // CELLSIZE) * CHUNKSIZE/CELLSIZE)
-        index = int(index)
-        if self.foodMode:
-           chunks[self.current_chunk][index].state = MarkerState.TOHOME
-        else:
-           chunks[self.current_chunk][index].state = MarkerState.TOFOOD
+    def PlaceMarker(self,chunks,renderqueue):
+        #index = ((self.position[0] % CHUNKSIZE) // CELLSIZE) + (((self.position[1] % CHUNKSIZE) // CELLSIZE) * CHUNKSIZE/CELLSIZE)
+        #index = int(index)
+        index = self.current_cell[0] + self.current_cell[1] * 8
+        try:
+            if self.foodMode:
+                chunks[self.current_chunk][index].state = MarkerState.TOHOME 
+            else:
+                chunks[self.current_chunk][index].state = MarkerState.TOFOOD
+            if not self.HasItemWithPosition((renderqueue[self.current_chunk]),(chunks[self.current_chunk][index])):
+                renderqueue[self.current_chunk].append(chunks[self.current_chunk][index])
+        except:
+            pass
 
-    def Update(self, screen, deltaTime, chunks):
+    def Update(self, screen, deltaTime, chunks,renderqueue):
         offset = self.RandomMovementOffset()  # get a movementoffset for wander
 
         self.desireddir = pygame.math.Vector2.normalize(self.desireddir+(offset*self.wanderStrength))
 
         self.HandlePheramoneDirection(chunks)
 
-        if self.foodMode:
-            self.HandleFood(chunks)
+        """if self.foodMode:
+            self.HandleFood(chunks)"""
 
         self.HandleEdgeAvoidance()
         # set desired velocity to max speed
@@ -212,7 +200,7 @@ class Ant:
         self.angle = -(math.degrees(math.atan2(self.velocity.y, self.velocity.x)))
         self.UpdatePosition(screen)
         self.CurrentChunk()
-        self.PlaceMarker(chunks)
+        self.PlaceMarker(chunks,renderqueue)
 
 
 class MarkerState(Enum):
@@ -222,16 +210,21 @@ class MarkerState(Enum):
     FOOD = 3
 
 class Marker(object):
-    def __init__(self, intensity=1000, state=MarkerState.NULL):
+    def __init__(self, position,currentchunk, intensity=1000, state=MarkerState.NULL):
         self.state = state
+        self.position = position
+        self.chunk = currentchunk
         if not self.state:
             self.intensity = intensity
         else:
             self.intensity = 0
         
 
-    def Update(self, deltaTime):
+    def Update(self, deltaTime,renderqueue):
         self.intensity -= 1.0*deltaTime
+        if self.intensity <= 0:
+            self.state = MarkerState.NULL
+            renderqueue[self.chunk].remove(self)
 
     def IsDone(self):
         return self.intensity < 0

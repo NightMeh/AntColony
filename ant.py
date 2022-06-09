@@ -12,7 +12,7 @@ class Ant:
     def __init__(self, pos, home):
         self.antscale = 1
         self.antimage = pygame.image.load(r'Assets\ant.png').convert_alpha()
-        self.maxSpeed = 15
+        self.maxSpeed = 7
         self.steerStrength = 1.7
         self.wanderStrength = 0.1
         self.position = pos
@@ -87,6 +87,7 @@ class Ant:
                 try:
                     #set marker to null
                     self.targetFood[1].state = MarkerState.NULL
+                    print(self.targetFood[1].state)
                     self.targetFoodList = []
                     self.foodMode = False
                 except:
@@ -104,9 +105,10 @@ class Ant:
                         markerpos = pygame.math.Vector2(marker.position[0],marker.position[1])
                         tomarker = pygame.math.Vector2(markerpos - self.position)
                         length = pygame.math.Vector2.length(tomarker)
-                        m_vecx = self.cos(self.angle)
-                        m_vecy = self.sin(self.angle)
+                        m_vecx = math.cos(self.angle)
+                        m_vecy = math.sin(self.angle)
                         m_vec = pygame.math.Vector2(m_vecx,m_vecy)
+                        point = pygame.math.Vector2(0,0)
 
                         if length < self.markerDetectionRange:
                             if pygame.math.Vector2.dot(tomarker,m_vec)>0:
@@ -119,9 +121,10 @@ class Ant:
                         markerpos = pygame.math.Vector2(marker.position[0],marker.position[1])
                         tomarker = pygame.math.Vector2(markerpos - self.position)
                         length = pygame.math.Vector2.length(tomarker)
-                        m_vecx = self.cos(self.angle)
-                        m_vecy = self.sin(self.angle)
+                        m_vecx = math.cos(self.angle)
+                        m_vecy = math.sin(self.angle)
                         m_vec = pygame.math.Vector2(m_vecx,m_vecy)
+                        point = pygame.math.Vector2(0,0)
 
                         if length < self.markerDetectionRange:
                             if pygame.math.Vector2.dot(tomarker,m_vec)>0:
@@ -136,7 +139,6 @@ class Ant:
             for x in range(len(savelist)):
                 if savelist[x][0] > savelist[total_intensitypos][0]:
                     total_intensitypos = x
-                    print(total_intensitypos)
             total_intensity = savelist[total_intensitypos][0]
             point = savelist[total_intensitypos][1]
 
@@ -156,12 +158,10 @@ class Ant:
         screen.blit(pygame.transform.rotate(self.antimage, self.angle), self.position-[16, 16])
 
     def PlaceMarker(self,chunks,renderqueue):
-        #index = ((self.position[0] % CHUNKSIZE) // CELLSIZE) + (((self.position[1] % CHUNKSIZE) // CELLSIZE) * CHUNKSIZE/CELLSIZE)
-        #index = int(index)
         index = self.current_cell[0] + self.current_cell[1] * 8
         try:
             if self.foodMode:
-                chunks[self.current_chunk][index].state = MarkerState.TOHOME 
+                chunks[self.current_chunk][index].state = MarkerState.TOHOME
             else:
                 chunks[self.current_chunk][index].state = MarkerState.TOFOOD
             if not self.HasItemWithPosition((renderqueue[self.current_chunk]),(chunks[self.current_chunk][index])):
@@ -176,8 +176,8 @@ class Ant:
 
         self.HandlePheramoneDirection(chunks)
 
-        """if self.foodMode:
-            self.HandleFood(chunks)"""
+        if self.foodMode:
+            self.HandleFood(chunks)
 
         self.HandleEdgeAvoidance()
         # set desired velocity to max speed
@@ -210,20 +210,21 @@ class MarkerState(Enum):
     FOOD = 3
 
 class Marker(object):
-    def __init__(self, position,currentchunk, intensity=1000, state=MarkerState.NULL):
+    def __init__(self, position,currentchunk, intensity=100, state=MarkerState.NULL):
         self.state = state
         self.position = position
         self.chunk = currentchunk
-        if not self.state:
-            self.intensity = intensity
-        else:
-            self.intensity = 0
+        self.defaultintensity = intensity
+        self.intensity = intensity
+        
         
 
-    def Update(self, deltaTime,renderqueue):
+    def Update(self, deltaTime,renderqueue,chunks):
         self.intensity -= 1.0*deltaTime
         if self.intensity <= 0:
             self.state = MarkerState.NULL
+            self.intensity = self.defaultintensity
+
             renderqueue[self.chunk].remove(self)
 
     def IsDone(self):

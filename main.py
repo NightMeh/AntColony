@@ -1,4 +1,6 @@
+from calendar import c
 from functools import lru_cache
+from multiprocessing.dummy import current_process
 import ant
 import pygame
 import cProfile
@@ -27,9 +29,22 @@ def testfunc():
             chunks[(chunkx,chunky)] = np.array(markers,dtype=object)
             
             renderqueue[(chunkx,chunky)] = []
-    
+            
+    def getMouseChunkCell():
+        position = pygame.mouse.get_pos()
+        chunkx = (position[0] // CHUNKSIZE)
+        chunky = (position[1] // CHUNKSIZE)
+        chunkx = max(0, min(chunkx, (SCREENWIDTH//CHUNKSIZE)-1))
+        chunky = max(0, min(chunky, (SCREENHEIGHT//CHUNKSIZE)-1))
+        cellx = (position[0] - chunkx*CHUNKSIZE)//CELLSIZE
+        celly = (position[1] - chunky*CHUNKSIZE)//CELLSIZE
+        current_chunk = (int(chunkx), int(chunky))
+        current_cell = (int(cellx),int(celly))
+
+        return current_cell,current_chunk
+
     home = ant.Home((600,500),20)
-    for x in range(50):
+    for x in range(NUMANTS):
         antList.append(ant.Ant((600,350),home))
 
     while playing:
@@ -43,15 +58,7 @@ def testfunc():
             if event.type == pygame.QUIT:
                 playing = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                position = pygame.mouse.get_pos()
-                chunkx = (position[0] // CHUNKSIZE)
-                chunky = (position[1] // CHUNKSIZE)
-                chunkx = max(0, min(chunkx, (SCREENWIDTH//CHUNKSIZE)-1))
-                chunky = max(0, min(chunky, (SCREENHEIGHT//CHUNKSIZE)-1))
-                cellx = (position[0] - chunkx*CHUNKSIZE)//CELLSIZE
-                celly = (position[1] - chunky*CHUNKSIZE)//CELLSIZE
-                current_chunk = (int(chunkx), int(chunky))
-                current_cell = (int(cellx),int(celly))
+                current_cell,current_chunk = getMouseChunkCell()
                 index = current_cell[0] + current_cell[1] * 8
                 chunks[current_chunk][index].state = ant.MarkerState.FOOD
                 renderqueue[current_chunk].append(chunks[current_chunk][index])
@@ -59,7 +66,11 @@ def testfunc():
             if event.type == pygame.KEYDOWN:
                 match event.key:
                     case pygame.K_w:
-                        pass
+                        current_cell,current_chunk = getMouseChunkCell()
+                        index = current_cell[0] + current_cell[1] * 8
+                        chunks[current_chunk][index].state = ant.MarkerState.TOFOOD
+                        if chunks[current_chunk][index] not in renderqueue[current_chunk]:
+                            renderqueue[current_chunk].append(chunks[current_chunk][index])
                     case pygame.K_s:
                         pass
 

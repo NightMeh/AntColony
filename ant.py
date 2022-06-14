@@ -31,7 +31,7 @@ class Ant:
         self.current_chunk = (0, 0)
         self.current_cell = (0, 0)
         self.angle = 0
-        self.markerDetectionRange = 25
+        self.markerDetectionRange = 1000
 
     def CurrentChunk(self):
         chunkx = (self.position[0] // CHUNKSIZE)
@@ -39,8 +39,8 @@ class Ant:
         chunkx = max(0, min(chunkx, (SCREENWIDTH//CHUNKSIZE)-1))
         chunky = max(0, min(chunky, (SCREENHEIGHT//CHUNKSIZE)-1))
 
-        cellx = (self.position[0] - chunkx*CHUNKSIZE)//CELLSIZE
-        celly = (self.position[1] - chunky*CHUNKSIZE)//CELLSIZE
+        cellx = max(0,min((CHUNKSIZE//CELLSIZE)-1,(self.position[0] - chunkx*CHUNKSIZE)//CELLSIZE))
+        celly = max(0,min((CHUNKSIZE//CELLSIZE)-1,(self.position[1] - chunky*CHUNKSIZE)//CELLSIZE))
         self.current_chunk = (int(chunkx), int(chunky))
         self.current_cell = (int(cellx), int(celly))
     
@@ -86,8 +86,7 @@ class Ant:
             if pygame.math.Vector2.length(self.targetFood[0] - self.position) <= self.pickupRadius:
                 try:
                     #set marker to null
-                    self.targetFood[1].state = MarkerState.NULL
-                    print(self.targetFood[1].state)
+                    #self.targetFood[1].state = MarkerState.NULL
                     self.targetFoodList = []
                     self.foodMode = False
                 except:
@@ -102,6 +101,7 @@ class Ant:
             for marker in chunks[chunk]:
                 if marker.state != MarkerState.NULL:
                     if self.foodMode and marker.state == MarkerState.TOFOOD:
+                        print("found pheramone")
                         markerpos = pygame.math.Vector2(marker.position[0],marker.position[1])
                         tomarker = pygame.math.Vector2(markerpos - self.position)
                         length = pygame.math.Vector2.length(tomarker)
@@ -111,9 +111,13 @@ class Ant:
                         point = pygame.math.Vector2(0,0)
 
                         if length < self.markerDetectionRange:
+                            print("HERE")
                             if pygame.math.Vector2.dot(tomarker,m_vec)>0:
                                 total_intensity += marker.intensity
-                                point += marker.intensity * markerpos
+                                point.x += marker.intensity * markerpos.x
+                                point.y += marker.intensity * markerpos.y
+
+                        print(point)
                         tempsave = (total_intensity,point)
                         savelist.append(tempsave)
 
@@ -159,6 +163,8 @@ class Ant:
 
     def PlaceMarker(self,chunks,renderqueue):
         index = self.current_cell[0] + self.current_cell[1] * 8
+        if chunks[self.current_chunk][index].state == MarkerState.FOOD:
+            return
         try:
             if self.foodMode:
                 chunks[self.current_chunk][index].state = MarkerState.TOHOME

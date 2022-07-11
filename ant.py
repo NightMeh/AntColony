@@ -74,19 +74,22 @@ class Ant:
                     if marker.state == MarkerState.FOOD:
                         markerx = (CHUNKSIZE*chunk[0])+(index%(CHUNKSIZE/CELLSIZE))*CELLSIZE
                         markery = CHUNKSIZE*chunk[1]+(index // (CHUNKSIZE/CELLSIZE))*CELLSIZE
-                        self.targetFoodList.append((pygame.math.Vector2(markerx,markery),marker))
+                        self.targetFoodList.append((pygame.math.Vector2(markerx,markery)))
 
             if len(self.targetFoodList) > 0:
+                print(self.foodMode)
+                print(self.targetFoodList)
                 self.targetFood = random.choice(self.targetFoodList)
-                self.desireddir = pygame.math.Vector2.normalize(self.targetFood[0] - self.position)
+                self.desireddir = pygame.math.Vector2.normalize(self.targetFood - self.position)
+                print(self.desireddir)
                 
         else:
-            self.desireddir = pygame.math.Vector2.normalize(self.targetFood[0] - self.position)
+            self.desireddir = pygame.math.Vector2.normalize(self.targetFood - self.position)
+            
 
-            if pygame.math.Vector2.length(self.targetFood[0] - self.position) <= self.pickupRadius:
+            if pygame.math.Vector2.length(self.targetFood - self.position) <= self.pickupRadius:
                 try:
                     #set marker to null
-                    #self.targetFood[1].state = MarkerState.NULL
                     self.targetFoodList = []
                     self.foodMode = False
                 except:
@@ -101,6 +104,27 @@ class Ant:
             for marker in chunks[chunk]:
                 if marker.state != MarkerState.NULL:
                     if self.foodMode and marker.state == MarkerState.TOFOOD:
+                        
+                        markerpos = pygame.math.Vector2(marker.position[0],marker.position[1])
+                        tomarker = pygame.math.Vector2(markerpos - self.position)
+                        length = pygame.math.Vector2.length(tomarker)
+                        m_vecx = math.cos(self.angle)
+                        m_vecy = math.sin(self.angle)
+                        m_vec = pygame.math.Vector2(m_vecx,m_vecy)
+                        point = pygame.math.Vector2(0,0)
+
+                        if length < self.markerDetectionRange:
+                            
+                            if pygame.math.Vector2.dot(tomarker,m_vec)>0:
+                                total_intensity += marker.intensity
+                                point.x += marker.intensity * markerpos.x
+                                point.y += marker.intensity * markerpos.y
+
+                        print(point)
+                        tempsave = (total_intensity,point)
+                        savelist.append(tempsave)
+
+                    elif not self.foodMode and marker.state == MarkerState.TOHOME:
                         print("found pheramone")
                         markerpos = pygame.math.Vector2(marker.position[0],marker.position[1])
                         tomarker = pygame.math.Vector2(markerpos - self.position)
@@ -112,25 +136,6 @@ class Ant:
 
                         if length < self.markerDetectionRange:
                             print("HERE")
-                            if pygame.math.Vector2.dot(tomarker,m_vec)>0:
-                                total_intensity += marker.intensity
-                                point.x += marker.intensity * markerpos.x
-                                point.y += marker.intensity * markerpos.y
-
-                        print(point)
-                        tempsave = (total_intensity,point)
-                        savelist.append(tempsave)
-
-                    elif not self.foodMode and marker.state == MarkerState.TOHOME:
-                        markerpos = pygame.math.Vector2(marker.position[0],marker.position[1])
-                        tomarker = pygame.math.Vector2(markerpos - self.position)
-                        length = pygame.math.Vector2.length(tomarker)
-                        m_vecx = math.cos(self.angle)
-                        m_vecy = math.sin(self.angle)
-                        m_vec = pygame.math.Vector2(m_vecx,m_vecy)
-                        point = pygame.math.Vector2(0,0)
-
-                        if length < self.markerDetectionRange:
                             if pygame.math.Vector2.dot(tomarker,m_vec)>0:
                                 total_intensity += marker.intensity
                                 point += marker.intensity * markerpos
@@ -149,9 +154,13 @@ class Ant:
         if total_intensity:
                 tempvec = pygame.math.Vector2(point / total_intensity - self.position)
                 if tempvec.x > 0:
-                    self.desireddir = math.acos(tempvec.x/pygame.math.Vector2.length(tempvec))
+                    self.desireddir.x = math.acos(tempvec.x/pygame.math.Vector2.length(tempvec))
+                    self.desireddir.y = math.acos(tempvec.y/pygame.math.Vector2.length(tempvec))
+                    print(">0")
                 else:
-                    self.desireddir = -(math.acos(tempvec.x/pygame.math.Vector2.length(tempvec)))
+                    self.desireddir.x = -(math.acos(tempvec.x/pygame.math.Vector2.length(tempvec)))
+                    self.desireddir.y = -(math.acos(tempvec.y/pygame.math.Vector2.length(tempvec)))
+                    print("=<0")
 
 
     def HandleEdgeAvoidance(self):
@@ -190,7 +199,7 @@ class Ant:
         desiredVelocity = self.desireddir * self.maxSpeed
         # set steer based on how fast it is wants to go
         desiredSteeringForce = (desiredVelocity - self.velocity) * self.steerStrength
-        acceleration = desiredSteeringForce / 1
+        acceleration = desiredSteeringForce
         # make sure its not over the limit
         if pygame.math.Vector2.length(desiredSteeringForce) > self.steerStrength:
             pygame.math.Vector2.scale_to_length(desiredSteeringForce, self.steerStrength)

@@ -98,69 +98,52 @@ class Ant:
 
     def HandlePheramoneDirection(self, chunks):
         chunksToCheck = self.ChunksToCheck()
-        savelist = []
+        total_intensity = 0
+        point = pygame.math.Vector2(0,0)
         for chunk in chunksToCheck:
-            total_intensity = 0
             for marker in chunks[chunk]:
                 if marker.state != MarkerState.NULL:
                     if self.foodMode and marker.state == MarkerState.TOFOOD:
-                        
                         markerpos = pygame.math.Vector2(marker.position[0],marker.position[1])
+                        markerpos.x = marker.position[0]*CELLSIZE+marker.chunk[0]*CHUNKSIZE
+                        markerpos.y = marker.position[1]*CELLSIZE+marker.chunk[1]*CHUNKSIZE
                         tomarker = pygame.math.Vector2(markerpos - self.position)
                         length = pygame.math.Vector2.length(tomarker)
                         m_vecx = math.cos(self.angle)
-                        m_vecy = math.sin(self.angle)
+                        m_vecy = -math.sin(self.angle)
                         m_vec = pygame.math.Vector2(m_vecx,m_vecy)
-                        point = pygame.math.Vector2(0,0)
 
                         if length < self.markerDetectionRange:
-                            
                             if pygame.math.Vector2.dot(tomarker,m_vec)>0:
                                 total_intensity += marker.intensity
                                 point.x += marker.intensity * markerpos.x
                                 point.y += marker.intensity * markerpos.y
 
-                        print(point)
-                        tempsave = (total_intensity,point)
-                        savelist.append(tempsave)
-
                     elif not self.foodMode and marker.state == MarkerState.TOHOME:
-                        print("found pheramone")
                         markerpos = pygame.math.Vector2(marker.position[0],marker.position[1])
+                        markerpos.x = marker.position[0]*CELLSIZE+marker.chunk[0]*CHUNKSIZE
+                        markerpos.y = marker.position[1]*CELLSIZE+marker.chunk[1]*CHUNKSIZE
                         tomarker = pygame.math.Vector2(markerpos - self.position)
                         length = pygame.math.Vector2.length(tomarker)
                         m_vecx = math.cos(self.angle)
                         m_vecy = math.sin(self.angle)
                         m_vec = pygame.math.Vector2(m_vecx,m_vecy)
-                        point = pygame.math.Vector2(0,0)
 
                         if length < self.markerDetectionRange:
-                            print("HERE")
                             if pygame.math.Vector2.dot(tomarker,m_vec)>0:
                                 total_intensity += marker.intensity
-                                point += marker.intensity * markerpos
-
-                        tempsave = (total_intensity,point)
-                        savelist.append(tempsave)
-        if len(savelist) != 0:
-            total_intensitypos = 0
-
-            for x in range(len(savelist)):
-                if savelist[x][0] > savelist[total_intensitypos][0]:
-                    total_intensitypos = x
-            total_intensity = savelist[total_intensitypos][0]
-            point = savelist[total_intensitypos][1]
+                                point.x += marker.intensity * markerpos.x
+                                point.y += marker.intensity * markerpos.y
 
         if total_intensity:
-                tempvec = pygame.math.Vector2(point / total_intensity - self.position)
-                if tempvec.x > 0:
-                    self.desireddir.x = math.acos(tempvec.x/pygame.math.Vector2.length(tempvec))
-                    self.desireddir.y = math.acos(tempvec.y/pygame.math.Vector2.length(tempvec))
-                    print(">0")
-                else:
-                    self.desireddir.x = -(math.acos(tempvec.x/pygame.math.Vector2.length(tempvec)))
-                    self.desireddir.y = -(math.acos(tempvec.y/pygame.math.Vector2.length(tempvec)))
-                    print("=<0")
+            
+            tempvec = pygame.math.Vector2((point.x / total_intensity) - self.position.x,(point.y / total_intensity - self.position.y))
+            print("TEmpvec",tempvec)
+            if pygame.math.Vector2.length(tempvec) > 0:
+                self.desireddir = pygame.math.Vector2.normalize(tempvec)
+                print("desired",self.desireddir)
+                print(">0")
+        #print(self.desireddir)
 
 
     def HandleEdgeAvoidance(self):

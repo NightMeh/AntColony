@@ -43,17 +43,16 @@ def testfunc():
 
         return current_cell,current_chunk
 
-    home = ant.Home((600,500),20)
+    colony = ant.Colony((360,640),20)
+    colony.Draw(screen)
     for x in range(NUMANTS):
-        antList.append(ant.Ant((600,350),home))
+        antList.append(ant.Ant((600,350),colony))
 
     while playing:
         engine.update_dt()
         pygame.display.set_caption("{:.2f}".format(engine.clock.get_fps()))
 
         #deltaTime = clock.tick(400)/10
-        
-        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 playing = False
@@ -73,6 +72,7 @@ def testfunc():
                             renderqueue[current_chunk].append(chunks[current_chunk][index])
                     case pygame.K_s:
                         pass
+            
 
 
         for chunk in renderqueue:

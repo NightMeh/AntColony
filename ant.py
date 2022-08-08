@@ -13,6 +13,7 @@ class Ant:
         self.antscale = 1
         self.antimage = pygame.image.load(r'Assets\ant.png').convert_alpha()
         self.maxSpeed = 7
+        self.minSpeed = 0
         self.steerStrength = 1.7
         self.wanderStrength = 0.1
         self.position = pos
@@ -96,7 +97,7 @@ class Ant:
                     self.targetFood = None
                     self.targetFoodList = []
 
-    def HandlePheramoneDirection(self, chunks):
+    def HandlePheramoneDirection(self, chunks,screen):
         chunksToCheck = self.ChunksToCheck()
         total_intensity = 0
         point = pygame.math.Vector2(0,0)
@@ -110,7 +111,7 @@ class Ant:
                         tomarker = pygame.math.Vector2(markerpos - self.position)
                         length = pygame.math.Vector2.length(tomarker)
                         m_vecx = math.cos(self.angle)
-                        m_vecy = -math.sin(self.angle)
+                        m_vecy = math.sin(self.angle)
                         m_vec = pygame.math.Vector2(m_vecx,m_vecy)
 
                         if length < self.markerDetectionRange:
@@ -132,17 +133,20 @@ class Ant:
                         if length < self.markerDetectionRange:
                             if pygame.math.Vector2.dot(tomarker,m_vec)>0:
                                 total_intensity += marker.intensity
-                                point.x += marker.intensity * markerpos.x
-                                point.y += marker.intensity * markerpos.y
+                                point.x += (100-marker.intensity) * markerpos.x
+                                point.y += (100-marker.intensity) * markerpos.y
 
         if total_intensity:
             
-            tempvec = pygame.math.Vector2((point.x / total_intensity) - self.position.x,(point.y / total_intensity - self.position.y))
+            tempvec = pygame.math.Vector2((point.x / total_intensity) - self.position.x,((point.y / total_intensity) - self.position.y))
             print("TEmpvec",tempvec)
             if pygame.math.Vector2.length(tempvec) > 0:
                 self.desireddir = pygame.math.Vector2.normalize(tempvec)
                 print("desired",self.desireddir)
-                print(">0")
+                print("tempvec",tempvec)
+                pygame.draw.line(screen, [0, 0, 0], self.position,pygame.math.Vector2((point.x / total_intensity)))
+                pygame.draw.line(screen, [255, 0, 0], self.position,point)
+                pygame.draw.line(screen, [0, 255, 0], self.position,self.position+tempvec)
         #print(self.desireddir)
 
 
@@ -172,7 +176,7 @@ class Ant:
 
         self.desireddir = pygame.math.Vector2.normalize(self.desireddir+(offset*self.wanderStrength))
 
-        self.HandlePheramoneDirection(chunks)
+        self.HandlePheramoneDirection(chunks,screen)
 
         if self.foodMode:
             self.HandleFood(chunks)
@@ -192,6 +196,8 @@ class Ant:
 
         if (pygame.math.Vector2.length(self.velocity)) > self.maxSpeed:  # make sure its not over the limit pygame.math.Vector2.scale_to_length(self.velocity, self.maxSpeed)
             pygame.math.Vector2.scale_to_length(self.velocity, self.maxSpeed)
+        if (pygame.math.Vector2.length(self.velocity)) < self.minSpeed:  # make sure its not over the limit pygame.math.Vector2.scale_to_length(self.velocity, self.maxSpeed)
+            pygame.math.Vector2.scale_to_length(self.velocity, self.minSpeed)
         self.position += self.velocity*deltaTime  # update its pos
 
         # get its self.angle
@@ -229,7 +235,7 @@ class Marker(object):
         return self.intensity < 0
 
 
-class Home:
+class Colony:
     def __init__(self, pos, radius):
         self.position = pos
         self.radius = radius
